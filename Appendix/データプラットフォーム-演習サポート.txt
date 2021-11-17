@@ -1,0 +1,101 @@
+○○○○○○○○○○○○○○○○○○
+○●● 事前準備コース　短縮版 ●●○
+○●●　演習サポートファイル　●●○
+○○○○○○○○○○○○○○○○○○
+
+----------------------------------------
+P14　クラス定義（Training.Person）
+----------------------------------------
+
+Class Training.Person Extends %Persistent
+{
+
+/// 　人の名前
+Property Name As %String;
+
+/// 　メールアドレス
+Property Email As %String;
+}
+
+----------------------------------------
+P21　オブジェクトの生成と保存
+----------------------------------------
+
+set $namespace="TEST"  // 右辺はネームスペース名を二重引用符で囲い指定します
+set person = ##class(Training.Person).%New()
+set person.Name = "山田太郎"
+set person.Email = "yamada@majorcorp.com"
+set st = person.%Save()
+write st  // 出力結果1なら成功
+
+kill person  // メモリ内オブジェクトの削除
+set person=##class(Training.Person).%OpenId(1)  // データベースからロード
+write person.Name   // プロパティ値の参照
+set person.Name="山田たろう"  // プロパティ値の更新（この時点ではメモリ内のみの変更）
+set st=person.%Save()   // データベースへの保存
+
+
+
+----------------------------------------
+P24　SQL文例
+----------------------------------------
+UPDATE Training.Person
+ SET Name='やまだたろう'
+ WHERE ID=1
+
+
+----------------------------------------
+P40　クラスメソッド　CreateEmail()
+----------------------------------------
+ClassMethod CreateEmail(account As %String) As %String [ SqlProc ]
+{
+	// 引数が指定されなかったら空を返す
+	if $get(account)="" quit ""
+	quit account_"@mail.com"
+}
+
+ターミナルでの実行例
+write ##class(Training.Person).CreateEmail("aiu")
+
+
+----------------------------------------
+P40　ストアドプロシージャ　実行例
+----------------------------------------
+INSERT INTO Training.Person (Name,Email)
+VALUES('田村',Training.Person_CreateEmail('tamura'))
+
+
+----------------------------------------
+P44　おまけ：機能の追加（JSONアダプタ）
+----------------------------------------
+set person=##class(Training.Person).%OpenId(1)
+do person.%JSONExport()
+
+// 以下のような文字列が出力されます
+//{"Name":"山田たろう","Email":"yamada@majorcorp.com"}
+
+// personインスタンスの中身をJSON形式に変換し、変数mojiに文字列としてセット
+do person.%JSONExportToString(.moji)
+write moji
+
+// personインスタンスの中身をJSON形式に変換し、変数streamにストリームとしてセット
+do person.%JSONExportToStream(.stream)
+// ストリームの中身を表示
+write stream.Read()
+
+
+----------------------------------------
+P45　おまけ：機能の追加（JSONアダプタ）：インポートの例
+----------------------------------------
+JSON例（c:\temp\input.json）
+{
+ "Name":"出口花子",
+ "Email":"hanako@mail.com"
+}
+
+
+// c:\temp\input.json　がある状態での実行
+set person=##class(Training.Person).%New()
+do person.%JSONImport("C:\temp\input.json")
+zwrite person
+
